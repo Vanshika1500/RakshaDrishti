@@ -19,3 +19,9 @@ ultralytics==8.2.48
 # Utility packages
 tqdm==4.66.4
 matplotlib==3.8.4
+
+# deployment
+streamlit==1.26.1
+MediaPipe
+streamlit-webrtc==0.49.0
+
