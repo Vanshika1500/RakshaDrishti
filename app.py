@@ -50,7 +50,7 @@ def show_live_webcam():
             from src.utils.run_combined import run_combined_detection
             run_combined_detection(
                 source="webcam",
-                weights_path=weights_path or "src/object_detection/detect.pt",
+                weights_path=weights_path or "src/object_detection/finalest.pt",
                 conf_obj=CONF_THRESH,
                 conf_pose=0.25,
                 skip_frames=SKIP_FRAMES,

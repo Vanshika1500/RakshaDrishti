@@ -5,7 +5,7 @@ import streamlit as st
 
 def run_combined_detection(
     source=0,
-    weights_path="src/object_detection/detect.pt",
+    weights_path="src/object_detection/finalest.pt",
     conf_obj=0.35,
     conf_pose=0.25,
     imgsz_pose=480,
