@@ -1,25 +1,14 @@
-# run_pose_with_logger.py
-import time, json, os, argparse
-from collections import deque
+# src/action_detection/run_pose.py
+import time, json, os
 import cv2
 import numpy as np
 from ultralytics import YOLO
-
-def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument('--source', default=0, help='Webcam index or video file')
-    p.add_argument('--imgsz', type=int, default=320)
-    p.add_argument('--log', default='Data/keypoints_logs.jsonl', help='File to save keypoints')
-    p.add_argument('--conf', type=float, default=0.25)
-    p.add_argument('--show', action='store_true', help='Show preview window')
-    p.add_argument('--label',default = None, help='Label for this recording.')
-    return p.parse_args()
+import streamlit as st
 
 def norm_kps(kps, frame_w, frame_h):
     """Normalize YOLOv8 keypoints safely for any version"""
     norm = []
     for joint in kps:
-        # joint can be list or array
         try:
             if len(joint) == 3:
                 x, y, c = joint
@@ -27,13 +16,10 @@ def norm_kps(kps, frame_w, frame_h):
                 x, y = joint
                 c = 1.0
             else:
-                # unexpected format
                 x = y = c = 0.0
-        except TypeError:
-            # if joint is a single number or None
+        except Exception:
             x = y = c = 0.0
 
-        # handle NaN / None
         if x is None or y is None or np.isnan(x) or np.isnan(y):
             x = y = c = 0.0
 
@@ -42,64 +28,89 @@ def norm_kps(kps, frame_w, frame_h):
     return norm
 
 
+def run_pose_detection(
+    source=0,
+    imgsz=320,
+    conf=0.25,
+    show=True,
+    label=None,
+    log_path=None,
+    run_flag=lambda: True
+):
+    """
+    Run YOLOv8 pose detection inside Streamlit.
 
-def main():
-    args = parse_args()
-    os.makedirs(os.path.dirname(args.log) or '.', exist_ok=True)
+    Args:
+        source (str|int): Webcam index, "webcam", or file path.
+        imgsz (int): Image size.
+        conf (float): Confidence threshold.
+        show (bool): Show preview inside Streamlit.
+        label (str|None): Optional label to log.
+        log_path (str|None): Path to save JSON logs.
+        run_flag (callable): Function that returns True/False to control loop.
 
-    cap = cv2.VideoCapture(int(args.source) if str(args.source).isdigit() else args.source)
+    Returns:
+        logs (list): Pose detection logs.
+    """
+    model = YOLO("src/action_detection/yolov8m_pose.pt")
+    cap = cv2.VideoCapture(0 if source == "webcam" else source)
+
     if not cap.isOpened():
-        raise SystemExit("Cannot open source")
+        raise RuntimeError(f"❌ Cannot open source: {source}")
 
-    model = YOLO('yolov8n-pose.pt')
+    logs = []
     frame_idx = 0
 
-    with open(args.log, 'a') as f:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame_idx += 1
-            H, W = frame.shape[:2]
+    # Streamlit placeholder for frames
+    stframe = st.empty()
 
-            results = model(frame, imgsz=args.imgsz, conf=args.conf)[0]
+    while run_flag() and cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_idx += 1
+        H, W = frame.shape[:2]
 
-            persons = []
-            try:
-                kps_all = results.keypoints.cpu().numpy()
-            except Exception:
-                kps_all = None
-            try:
-                boxes = results.boxes.xyxy.cpu().numpy()
-                confs = results.boxes.conf.cpu().numpy()
-            except Exception:
-                boxes = None
-                confs = None
+        results = model(frame, imgsz=imgsz, conf=conf)[0]
 
-            if kps_all is not None:
-                for i, kp in enumerate(kps_all):
-                    norm = norm_kps(kp, W, H)
-                    bbox = boxes[i].tolist() if boxes is not None else None
-                    conf = float(confs[i]) if confs is not None else None
-                    persons.append({'bbox': bbox, 'keypoints': norm, 'box_conf': conf})
+        persons = []
+        try:
+            kps_all = results.keypoints.cpu().numpy()
+            boxes = results.boxes.xyxy.cpu().numpy()
+            confs = results.boxes.conf.cpu().numpy()
+        except Exception:
+            kps_all, boxes, confs = None, None, None
 
-            log = {
-                't': time.time(),
-                'frame_idx': frame_idx,
-                'label': args.label,
-                'persons': persons,
-                'frame_size': [W,H]
-            }
-            f.write(json.dumps(log) + '\n')
+        if kps_all is not None:
+            for i, kp in enumerate(kps_all):
+                persons.append({
+                    "bbox": boxes[i].tolist() if boxes is not None else None,
+                    "keypoints": norm_kps(kp, W, H),
+                    "box_conf": float(confs[i]) if confs is not None else None
+                })
 
-            if args.show:
-                vis = results.plot()
-                cv2.imshow("pose_preview", vis)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+        log = {
+            "t": time.time(),
+            "frame_idx": frame_idx,
+            "label": label,
+            "persons": persons,
+            "frame_size": [W, H]
+        }
+        logs.append(log)
+
+        if log_path:
+            os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
+            with open(log_path, "a") as f:
+                f.write(json.dumps(log) + "\n")
+
+        if show:
+            vis = results.plot()
+            vis_rgb = cv2.cvtColor(vis, cv2.COLOR_BGR2RGB)
+            with st.container():
+                st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+                stframe.image(frame_rgb, channels="RGB", width=640)
+                st.markdown("</div>", unsafe_allow_html=True)
 
     cap.release()
-    cv2.destroyAllWindows()
+    return logs
 
-if __name__ == '__main__':
-    main()
