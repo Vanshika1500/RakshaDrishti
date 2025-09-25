@@ -50,7 +50,7 @@ def show_live_webcam():
             from src.utils.run_combined import run_combined_detection
             run_combined_detection(
                 source="webcam",
-                weights_path=weights_path or "src/object_detection/finalest.pt",
+                weights_path=weights_path or "Models/finalest.pt",
                 conf_obj=CONF_THRESH,
                 conf_pose=0.25,
                 skip_frames=SKIP_FRAMES,
@@ -94,7 +94,7 @@ def show_upload_processor():
             from src.utils.run_combined import run_combined_detection
             run_combined_detection(
             source="webcam",
-            weights_path="src/action_detection/yolov8n-pose.pt",
+            weights_path="Models/yolov8n-pose.pt",
             conf_obj=CONF_THRESH,
             conf_pose=0.25,
             skip_frames=SKIP_FRAMES,
