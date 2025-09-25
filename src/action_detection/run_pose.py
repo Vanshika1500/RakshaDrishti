@@ -52,7 +52,7 @@ def run_pose_detection(
     Returns:
         logs (list): Pose detection logs.
     """
-    model = YOLO("src/action_detection/yolov8m_pose.pt")
+    model = YOLO("src/action_detection/yolov8n-pose.pt")
     cap = cv2.VideoCapture(0 if source == "webcam" else source)
 
     if not cap.isOpened():

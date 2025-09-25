@@ -1,4 +1,4 @@
-# src/unified/run_combined.py
+# src/utils/run_combined.py
 import cv2
 from ultralytics import YOLO
 import streamlit as st
@@ -17,7 +17,7 @@ def run_combined_detection(
     """
     # Load models
     obj_model = YOLO(weights_path)
-    pose_model = YOLO("src/action_detection/yolov8m_pose.pt")   # ✅ use standard pose model
+    pose_model = YOLO("src/action_detection/yolov8n-pose.pt")   # ✅ use standard pose model
 
     cap = cv2.VideoCapture(0 if source == "webcam" else source)
     if not cap.isOpened():

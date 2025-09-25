@@ -7,14 +7,11 @@ joblib==1.3.2
 # Image and video processing
 opencv-python==4.9.0.80
 Pillow==10.3.0
+
 # PyTorch + YOLO
 torch==2.3.1
 torchvision==0.18.1
 ultralytics==8.2.48
-#when running on gpu 
-#pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-#to check , run python -c "import torch, ultralytics, cv2; print('torch:',torch.__version__,'cuda:',torch.cuda.is_available())"
-#this should print True for cuda if gpu is available
 
 # Utility packages
 tqdm==4.66.4
@@ -22,6 +19,10 @@ matplotlib==3.8.4
 
 # deployment
 streamlit==1.26.1
-MediaPipe
 streamlit-webrtc==0.49.0
 
+
+#when running on gpu 
+#pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#to check , run python -c "import torch, ultralytics, cv2; print('torch:',torch.__version__,'cuda:',torch.cuda.is_available())"
+#this should print True for cuda if gpu is available
