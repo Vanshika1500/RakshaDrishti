@@ -5,7 +5,7 @@ import streamlit as st
 
 def run_combined_detection(
     source=0,
-    weights_path="Models/finalest.pt",
+    weights_path="weights/finalest.pt",
     conf_obj=0.35,
     conf_pose=0.25,
     imgsz_pose=480,
@@ -17,7 +17,7 @@ def run_combined_detection(
     """
     # Load models
     obj_model = YOLO(weights_path)
-    pose_model = YOLO("Models/yolov8n-pose.pt")   # ✅ use standard pose model
+    pose_model = YOLO("/yolov8n-pose.pt")   # ✅ use standard pose model
 
     cap = cv2.VideoCapture(0 if source == "webcam" else source)
     if not cap.isOpened():

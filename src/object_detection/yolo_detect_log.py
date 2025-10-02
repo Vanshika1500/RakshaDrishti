@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # Load your custom trained model
-model = YOLO("Models/finalest.pt")
+model = YOLO("weights/finalest.pt")
 
 #image_path = "test1.jpg"
 
