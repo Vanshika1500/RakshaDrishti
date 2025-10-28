@@ -15,7 +15,7 @@ from tensorflow.keras.utils import to_categorical, plot_model
 # -------------------- CONFIG --------------------
 IMAGE_HEIGHT, IMAGE_WIDTH = 64, 64
 SEQUENCE_LENGTH = 16
-DATASET_DIR = "data"  # adjust if mounted differently
+DATASET_DIR = "Training/violence_training_data"  # adjust if mounted differently
 CLASSES_LIST = ["NonViolence", "Violence"]
 EPOCHS = 50
 BATCH_SIZE = 8
