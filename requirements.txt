@@ -23,7 +23,3 @@ streamlit==1.26.1
 streamlit-webrtc==0.49.0
 
 
-#when running on gpu 
-#pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-#to check , run python -c "import torch, ultralytics, cv2; print('torch:',torch.__version__,'cuda:',torch.cuda.is_available())"
-#this should print True for cuda if gpu is available
