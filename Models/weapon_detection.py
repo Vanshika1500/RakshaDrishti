@@ -3,6 +3,27 @@ from pathlib import Path
 import uuid
 import os
 from datetime import datetime
+import torch
+from torchvision import transforms
+import cv2
+import numpy as np
+
+model_path = "weights/finalest.pt"
+weapon_model = torch.load(model_path, map_location="cpu")
+weapon_model.eval()
+
+preprocess = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize((224, 224)),
+])
+
+def detect_weapon(frame):
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    tensor = preprocess(img).unsqueeze(0)
+    with torch.no_grad():
+        output = weapon_model(tensor)
+    prob = torch.sigmoid(output).item()
+    return prob > 0.5
 
 EVIDENCE_DIR = Path("Data/evidence_videos")
 EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

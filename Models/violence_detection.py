@@ -3,6 +3,34 @@ from pathlib import Path
 import uuid
 import cv2
 from datetime import datetime
+import torch
+from torchvision import transforms
+import cv2
+import numpy as np
+
+# Load model once when the module is imported
+model_path = "weights/violence_detector.keras"
+model = torch.load(model_path, map_location="cpu")
+model.eval()
+
+# preprocessing pipeline
+preprocess = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize((224, 224)),
+])
+
+def detect_violence(frame):
+    """
+    Takes a single image frame (numpy array), 
+    runs model inference, and returns True/False.
+    """
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    tensor = preprocess(img).unsqueeze(0)
+    with torch.no_grad():
+        output = model(tensor)
+    prob = torch.sigmoid(output).item()
+    return prob > 0.5  # True = violence detected
+
 
 EVIDENCE_DIR = Path("Data/evidence_videos")
 EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
