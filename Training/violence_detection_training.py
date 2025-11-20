@@ -13,11 +13,11 @@ from keras.applications.mobilenet_v2 import MobileNetV2
 from tensorflow.keras.utils import to_categorical, plot_model
 
 # -------------------- CONFIG --------------------
-IMAGE_HEIGHT, IMAGE_WIDTH = 64, 64
+IMAGE_HEIGHT, IMAGE_WIDTH = 96, 96
 SEQUENCE_LENGTH = 16
 DATASET_DIR = "Training/violence_training_data"  # adjust if mounted differently
 CLASSES_LIST = ["NonViolence", "Violence"]
-EPOCHS = 50
+EPOCHS = 20
 BATCH_SIZE = 8
 MODEL_SAVE_PATH = "weights/violence_detector.keras"
 
@@ -58,7 +58,7 @@ def create_dataset():
 def create_model():
     mobilenet = MobileNetV2(include_top=False, weights="imagenet")
     mobilenet.trainable = True
-    for layer in mobilenet.layers[:-40]:
+    for layer in mobilenet.layers[:-60]:
         layer.trainable = False
 
     model = Sequential()
@@ -109,3 +109,5 @@ if __name__ == "__main__":
     os.makedirs("weights", exist_ok=True)
     model.save(MODEL_SAVE_PATH)
     print(f"Model saved at {MODEL_SAVE_PATH}")
+    model.save("weights/violence_detector.h5")
+    print("Also saved as .h5")
