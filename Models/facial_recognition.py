@@ -4,7 +4,6 @@ import uuid
 import cv2
 from datetime import datetime
 import os
-import cv2
 import numpy as np
 from keras_facenet import FaceNet
 from tensorflow.keras.preprocessing import image

@@ -1,3 +1,9 @@
+#fixes issues of root
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 # unified_pipeline.py
 import cv2
 from collections import deque
