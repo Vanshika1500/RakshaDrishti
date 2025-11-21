@@ -1,79 +1,36 @@
-from src.db_utils import get_db_conn, insert_camera
-from pathlib import Path
-import uuid
-import cv2
-from datetime import datetime
-import torch
-from torchvision import transforms
-import cv2
+# src/models/violence_model.py
+
 import numpy as np
+from tensorflow.keras.models import load_model
+from collections import deque
 
-# Load model once when the module is imported
-model_path = "weights/violence_detector.keras"
-model = torch.load(model_path, map_location="cpu")
-model.eval()
+MODEL_PATH = "weights/violence_detector.h5"
+SEQUENCE_LENGTH = 16
+IMAGE_HEIGHT, IMAGE_WIDTH = 96, 96
 
-# preprocessing pipeline
-preprocess = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize((224, 224)),
-])
+class ViolenceModel:
+    def __init__(self):
+        print("Loading Violence Model...")
+        self.model = load_model(MODEL_PATH)
+        print("Violence Model Loaded Successfully!")
+        self.buffer = deque(maxlen=SEQUENCE_LENGTH)
 
-def detect_violence(frame):
-    """
-    Takes a single image frame (numpy array), 
-    runs model inference, and returns True/False.
-    """
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    tensor = preprocess(img).unsqueeze(0)
-    with torch.no_grad():
-        output = model(tensor)
-    prob = torch.sigmoid(output).item()
-    return prob > 0.5  # True = violence detected
+    def predict(self, frame):
+        # Resize + Normalize
+        frame_resized = cv2.resize(frame, (IMAGE_WIDTH, IMAGE_HEIGHT))
+        frame_norm = frame_resized / 255.0
 
+        # Add to buffer
+        self.buffer.append(frame_norm)
 
-EVIDENCE_DIR = Path("Data/evidence_videos")
-EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        # Only predict when buffer is full
+        if len(self.buffer) == SEQUENCE_LENGTH:
+            input_frames = np.expand_dims(np.array(self.buffer), axis=0)
+            preds = self.model.predict(input_frames, verbose=0)
 
-def save_video_snippet(frames, fps=20, width=None, height=None):
-    """
-    Saves a short snippet of detected violence video frames.
-    frames: list/iterable of BGR numpy frames (OpenCV)
-    Returns the file path of saved snippet.
-    """
-    if not frames:
-        return None
+            class_idx = np.argmax(preds)
+            confidence = preds[0][class_idx]
 
-    filename = f"violence_{datetime.utcnow().strftime('%Y%m%dT%H%M%S')}_{uuid.uuid4().hex[:6]}.mp4"
-    out_path = EVIDENCE_DIR / filename
+            return class_idx, confidence
+        return None, 0.0
 
-    # derive size from first frame if not provided
-    h, w = frames[0].shape[:2]
-    if width is None: width = w
-    if height is None: height = h
-
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(str(out_path), fourcc, fps, (width, height))
-    for f in frames:
-        writer.write(f)
-    writer.release()
-    return str(out_path)
-
-
-def log_violence_detection(camera_id, vehicle_type, number_plate, confidence, video_path=None):
-    """
-    Logs violence detection details into the database.
-    """
-    insert_camera(camera_id, vehicle_type, number_plate)
-    with get_db_conn() as conn:
-        conn.execute(
-            """INSERT INTO violence_detections
-               (camera_id, vehicle_type, number_plate, confidence, video_path, timestamp)
-               VALUES (?, ?, ?, ?, ?, datetime('now'))""",
-            (camera_id, vehicle_type, number_plate, float(confidence), video_path)
-        )
-
-# Example usage:
-# frames = deque buffer of frames
-# video_path = save_video_snippet(frames)
-# log_violence_detection("CAM01", "BUS", "MH12AB1234", 0.88, video_path)

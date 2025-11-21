@@ -1,11 +1,15 @@
 # src/processors/weapon_detector.py
 
+import os
 import cv2
 from ultralytics import YOLO
 
-# Load YOLO model just once
+# Build absolute path to weights
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "weights", "finalest.pt")
+
 print("Loading Weapon Detection Model (YOLO)...")
-weapon_model = YOLO("weights/finalest.pt")   # Your YOLO model path
+weapon_model = YOLO(MODEL_PATH)   # Correct path
 
 
 def process_weapon(frame):
@@ -16,7 +20,6 @@ def process_weapon(frame):
         confidence (float)
     """
 
-    # Run YOLO inference
     results = weapon_model(frame, verbose=False)
 
     detected = False
@@ -30,9 +33,10 @@ def process_weapon(frame):
             conf = float(box.conf[0])
             cls = int(box.cls[0])
 
-            # Weapon class check (cls==0 for most custom models)
+            # Assuming class 0 = weapon in your training
             if conf > max_conf:
                 max_conf = conf
                 detected = True
 
     return detected, max_conf
+

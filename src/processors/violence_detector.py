@@ -1,8 +1,23 @@
-from src.models.violence_model import load_violence_model
-from src.processors.violence_detection import detect_violence
+# src/processors/violence_detector.py
 
-violence_model = load_violence_model()
+import cv2
+from src.models.violence_model import ViolenceModel
+
+# load model once globally
+violence_model = ViolenceModel()
 
 def process_violence(frame):
-    detected, score = detect_violence(frame, violence_model)
-    return detected, score
+    """
+    Returns:
+        violence_detected (bool)
+        confidence (float)
+    """
+    class_idx, confidence = violence_model.predict(frame)
+
+    if class_idx is None:
+        return False, 0.0
+
+    # Class index: 0 = NonViolence, 1 = Violence
+    violence_detected = (class_idx == 1)
+
+    return violence_detected, confidence
