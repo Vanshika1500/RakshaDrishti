@@ -6,6 +6,9 @@ from keras_facenet import FaceNet
 print(" Loading FaceNet model")
 embedder = FaceNet()
 
+
+
+
 def extract_faces(img_bgr):
     """
     Extract face boxes + embeddings from BGR frame.

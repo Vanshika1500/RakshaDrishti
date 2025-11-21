@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from collections import deque
 
-MODEL_PATH = "weights/violence_detector.h5"
+MODEL_PATH = "src/weights/violence_detector.h5"
 SEQUENCE_LENGTH = 16
 IMAGE_HEIGHT, IMAGE_WIDTH = 96, 96
 
