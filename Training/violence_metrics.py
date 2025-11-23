@@ -4,7 +4,7 @@ import os
 from tensorflow.keras.models import load_model
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 
-MODEL_PATH = "src/weights/violence_detector.h5"
+MODEL_PATH = "src/weights/violence_model.h5"
 DATASET_PATH = "Training/violence_training_data"
 
 IMG_SIZE = 96

@@ -1,7 +1,7 @@
 from tensorflow.keras.models import load_model
 
 INPUT_PATH = "weights/violence_detector.keras"
-OUTPUT_PATH = "weights/violence_detector.h5"
+OUTPUT_PATH = "src/weights/violence_detector.h5"
 
 print("Loading model:", INPUT_PATH)
 model = load_model(INPUT_PATH)

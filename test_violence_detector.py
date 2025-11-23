@@ -6,7 +6,7 @@ from collections import deque
 
 # ---------------- CONFIG ----------------
 VIDEO_SOURCE = 0  # 0 = default webcam, or path to video file
-MODEL_PATH = "weights/violence_detector.h5"
+MODEL_PATH = "src/weights/violence_detector.h5"
 SEQUENCE_LENGTH = 16
 IMAGE_HEIGHT, IMAGE_WIDTH = 96, 96
 CLASSES_LIST = ["NonViolence", "Violence"]

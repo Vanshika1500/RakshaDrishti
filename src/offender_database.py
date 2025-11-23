@@ -2,7 +2,7 @@
 
 import os
 import numpy as np
-from src.models.face_model import get_embedding_from_path
+from models.face_model import get_embedding_from_path
 
 def load_offender_database(folder=None):
     """
