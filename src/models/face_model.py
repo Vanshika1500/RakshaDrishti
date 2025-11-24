@@ -4,9 +4,9 @@ import cv2
 from keras_facenet import FaceNet
 
 print(" Loading FaceNet model")
-embedder = FaceNet()
+#embedder = FaceNet()
 
-
+embedder = FaceNet(cache_folder="D:/keras_cache") 
 
 
 def extract_faces(img_bgr):
