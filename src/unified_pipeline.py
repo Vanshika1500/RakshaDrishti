@@ -25,8 +25,8 @@ from src.evidence_logger import (
 
 def run_unified_pipeline(
     camera_id="CAM01",
-    vehicle_type="UNKNOWN",
-    number_plate="N/A",
+    vehicle_type="BUS",
+    number_plate="UP 16 AB 0001",
     source=0  # webcam default
 ):
     """
