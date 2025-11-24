@@ -1,7 +1,7 @@
 # src/processors/violence_detector.py
 
 import cv2
-from src.models.violence_model import ViolenceModel
+from models.violence_model import ViolenceModel
 
 # load model once globally
 violence_model = ViolenceModel()
