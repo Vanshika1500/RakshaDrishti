@@ -3,8 +3,8 @@
 import cv2
 import numpy as np
 from numpy.linalg import norm
-from src.models.face_model import extract_faces
-from src.offender_database import load_offender_database
+from models.face_model import extract_faces
+from offender_database import load_offender_database
 
 # Load offender embeddings once
 offender_db = load_offender_database()

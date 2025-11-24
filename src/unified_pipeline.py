@@ -1,141 +1,137 @@
-#fixes issues of root
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-# unified_pipeline.py
 import cv2
 from collections import deque
 
-# --- Import processors ---
-from src.processors.face_recognition import process_face
-from src.processors.weapon_detector import process_weapon
-from src.processors.violence_detector import process_violence
-
-
-# --- Import logging ---
-from src.evidence_logger import (
+from processors.face_recognition import process_face
+from processors.weapon_detector import process_weapon
+from processors.violence_detector import process_violence
+from evidence_logger import (
     save_video_snippet,
     log_face_recognition,
     log_weapon_detection,
     log_violence_detection
 )
+from utilities.alert_manager import AlertManager
 
+FPS = 20
+PRE_EVENT_SEC = 5
+POST_EVENT_SEC = 5
+PRE_EVENT_FRAMES = FPS * PRE_EVENT_SEC
+POST_EVENT_FRAMES = FPS * POST_EVENT_SEC
+MIN_FRAMES = 5
 
-def run_unified_pipeline(
-    camera_id="CAM01",
-    vehicle_type="BUS",
-    number_plate="UP 16 AB 0001",
-    source=0  # webcam default
-):
-    """
-    Runs real-time unified video pipeline:
-    - Face Recognition
-    - Weapon Detection
-    - Violence Detection
-    """
+class UnifiedPipeline:
+    def __init__(self, camera_id="CAM01"):
+        self.camera_id = camera_id
 
-    cap = cv2.VideoCapture(source)
-    buffer = deque(maxlen=40)  # stores last N frames for evidence video
+        # Buffers
+        self.face_buffer = deque(maxlen=PRE_EVENT_FRAMES)
+        self.weapon_buffer = deque(maxlen=PRE_EVENT_FRAMES)
+        self.violence_buffer = deque(maxlen=PRE_EVENT_FRAMES)
 
-    # cooldowns prevent multiple logs every frame
-    cooldown_face = 0
-    cooldown_weapon = 0
-    cooldown_violence = 0
+        # Post-event counters
+        self.post_event_face = 0
+        self.post_event_weapon = 0
+        self.post_event_violence = 0
 
-    print("Unified pipeline running... Press 'q' to quit.")
+        # Flags
+        self.face_in_frame = False
+        self.weapon_in_frame = False
+        self.violence_in_frame = False
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+        # Videos to save
+        self.face_video_to_save = []
+        self.weapon_video_to_save = []
+        self.violence_video_to_save = []
 
-        buffer.append(frame.copy())
+        # Alerts
+        self.alert = AlertManager()
 
-        # -------------------------------
-        # 1️⃣ FACE RECOGNITION
-        # -------------------------------
-        face_id, face_name, face_confidence, face_detected = process_face(frame)
+    def process_frame(self, frame):
+        # Add frame to buffers
+        self.face_buffer.append(frame.copy())
+        self.weapon_buffer.append(frame.copy())
+        self.violence_buffer.append(frame.copy())
 
-        if face_detected and cooldown_face == 0:
-            video_path = save_video_snippet("face", list(buffer))
-            log_face_recognition(
-                camera_id,
-                vehicle_type,
-                number_plate,
-                face_id,
-                face_name,
-                face_confidence,
-                video_path
-            )
-            cooldown_face = 50
+        # ---------------- Face Detection ----------------
+        face_id, face_name, face_conf, face_detected = process_face(frame)
 
+        if face_detected and not self.face_in_frame:
+            # Rising edge: new face detected
+            self.face_in_frame = True
+            self.post_event_face = POST_EVENT_FRAMES
+            self.face_video_to_save = list(self.face_buffer)
+            video_path = save_video_snippet("face", self.face_video_to_save)
+            log_face_recognition(self.camera_id, "UNKNOWN", "N/A",
+                                 face_id, face_name, face_conf, video_path)
+            # Alert
+            if face_name.lower() in ["offender", "criminal", "wanted"]:
+                self.alert.high_beep()
+            else:
+                self.alert.low_beep()
 
-        # -------------------------------
-        # 2️⃣ WEAPON DETECTION
-        # -------------------------------
-        weapon_detected, weapon_confidence = process_weapon(frame)
+        elif not face_detected and self.face_in_frame:
+            # Falling edge: face disappeared
+            self.face_in_frame = False
+            self.post_event_face = POST_EVENT_FRAMES
 
-        if weapon_detected and cooldown_weapon == 0:
-            video_path = save_video_snippet("weapon", list(buffer))
-            log_weapon_detection(
-                camera_id,
-                vehicle_type,
-                number_plate,
-                "weapon",
-                weapon_confidence,
-                video_path
-            )
-            cooldown_weapon = 50
+        if self.post_event_face > 0:
+            self.face_video_to_save.append(frame.copy())
+            self.post_event_face -= 1
 
+        # ---------------- Weapon Detection ----------------
+        weapon_detected, weapon_conf, weapon_type = process_weapon(frame)
 
-        # -------------------------------
-        # 3️⃣ VIOLENCE DETECTION
-        # -------------------------------
-        violence_detected, violence_confidence = process_violence(frame)
+        if weapon_detected and not self.weapon_in_frame:
+            self.weapon_in_frame = True
+            self.post_event_weapon = POST_EVENT_FRAMES
+            self.weapon_video_to_save = list(self.weapon_buffer)
+            video_path = save_video_snippet("weapon", self.weapon_video_to_save)
+            log_weapon_detection(self.camera_id, "UNKNOWN", "N/A",
+                                 weapon_type, weapon_conf, video_path)
+            # Alert
+            self.alert.high_beep() if weapon_type.lower() != "knife" else self.alert.low_beep()
 
-        if violence_detected and cooldown_violence == 0:
-            video_path = save_video_snippet("violence", list(buffer))
-            log_violence_detection(
-                camera_id,
-                vehicle_type,
-                number_plate,
-                "violence",
-                violence_confidence,
-                video_path
-            )
-            cooldown_violence = 50
+        elif not weapon_detected and self.weapon_in_frame:
+            self.weapon_in_frame = False
+            self.post_event_weapon = POST_EVENT_FRAMES
 
+        if self.post_event_weapon > 0:
+            self.weapon_video_to_save.append(frame.copy())
+            self.post_event_weapon -= 1
 
-        # -------------------------------
-        # VISUAL FEEDBACK ON FRAME
-        # -------------------------------
-        cv2.putText(frame, f"Face Detected: {face_name}", (20, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+        # ---------------- Violence Detection ----------------
+        violence_detected, violence_conf = process_violence(frame)
+        # Debug print to confirm detection
+        print("Violence detected:", violence_detected, "Conf:", violence_conf)
 
-        cv2.putText(frame, f"Weapon: {weapon_confidence:.2f}", (20, 70),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (0, 0, 255) if weapon_detected else (0, 255, 0), 2)
+        if violence_detected and not self.violence_in_frame:
+            # Rising edge: violence starts
+            self.violence_in_frame = True
+            self.post_event_violence = POST_EVENT_FRAMES
+            self.violence_video_to_save = list(self.violence_buffer)
+            video_path = save_video_snippet("violence", self.violence_video_to_save)
+            log_violence_detection(self.camera_id, "UNKNOWN", "N/A",
+                                   violence_conf, video_path)
+            # Alert
+            if weapon_detected:
+                self.alert.high_beep()
+            else:
+                self.alert.low_beep()
 
-        cv2.putText(frame, f"Violence: {violence_confidence:.2f}", (20, 110),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (0, 0, 255) if violence_detected else (0, 255, 0), 2)
+        elif not violence_detected and self.violence_in_frame:
+            # Falling edge: violence ended
+            self.violence_in_frame = False
+            self.post_event_violence = POST_EVENT_FRAMES
 
-        cv2.imshow("Raksha Drishti Unified Pipeline", frame)
+        if self.post_event_violence > 0:
+            self.violence_video_to_save.append(frame.copy())
+            self.post_event_violence -= 1
 
-
-        # update cooldowns
-        cooldown_face = max(0, cooldown_face - 1)
-        cooldown_weapon = max(0, cooldown_weapon - 1)
-        cooldown_violence = max(0, cooldown_violence - 1)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    run_unified_pipeline()
+        # ---------------- Return Detection Results ----------------
+        return {
+            "face_detected": face_detected,
+            "face_name": face_name,
+            "weapon_detected": weapon_detected,
+            "weapon_type": weapon_type,
+            "violence_detected": violence_detected
+        }

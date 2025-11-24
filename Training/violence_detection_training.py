@@ -109,5 +109,5 @@ if __name__ == "__main__":
     os.makedirs("weights", exist_ok=True)
     model.save(MODEL_SAVE_PATH)
     print(f"Model saved at {MODEL_SAVE_PATH}")
-    model.save("src/weights/violence_detector.h5")
+    model.save("/weights/violence_detector.h5")
     print("Also saved as .h5")

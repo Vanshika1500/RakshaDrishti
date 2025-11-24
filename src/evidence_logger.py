@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 import cv2
 
-from src.utilities.db_utils import (
+from utilities.db_utils import (
     get_db_conn,
     insert_camera,
     insert_criminal
@@ -91,7 +91,7 @@ def log_weapon_detection(camera_id, vehicle_type, number_plate,
 # VIOLENCE LOGGING
 # ====================================
 def log_violence_detection(camera_id, vehicle_type, number_plate,
-                           violence_type, confidence, video_path=None):
+                           confidence, video_path=None):
 
     with get_db_conn() as conn:
 
@@ -100,12 +100,12 @@ def log_violence_detection(camera_id, vehicle_type, number_plate,
         conn.execute(
             """
             INSERT INTO violence_detections
-            (camera_id, vehicle_type, number_plate, violence_type,
+            (camera_id, vehicle_type, number_plate,
              confidence, video_path, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 camera_id, vehicle_type, number_plate,
-                violence_type, float(confidence), video_path
+                float(confidence), video_path
             )
         )
