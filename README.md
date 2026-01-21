@@ -1,1 +1,3 @@
-# RakshaDrishti - Minor Project
+# RAKSHADRISHTI: AI THREAT DETECTION FOR PASSENGER PROTECTION
+RakshaDrishti is an intelligent surveillance system designed to enhance passenger safety in public transportation by leveraging modern computer vision and deep learning techniques. The project integrates multiple AI models to automatically detect weapons, identify violent behavior, and recognize faces of known offenders in real time. By combining these capabilities into a unified system, RakshaDrishti transforms conventional CCTV footage,traditionally used only for passive monitoring into an active safety mechanism that can proactively identify threats and trigger timely alerts.
+
